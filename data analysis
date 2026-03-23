@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulseTrack Pro — Runner Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0a0e17;
+    color: #e0e6f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .bg-glow {
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,210,150,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 30px 20px 10px;
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00d296, #00b4d8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 2px;
+  }
+
+  .logo-sub {
+    font-size: 0.75rem;
+    color: #5a6a80;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 0 16px 40px;
+  }
+
+  /* Input Panel */
+  .input-panel {
+    background: linear-gradient(145deg, #111827, #0f1520);
+    border: 1px solid #1e2a3a;
+    border-radius: 20px;
+    padding: 28px 24px;
+    margin-bottom: 24px;
+  }
+
+  .input-panel h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    color: #00d296;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-size: 0.75rem;
+    color: #6b7b90;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .field input, .field select {
+    background: #0a0e17;
+    border: 1px solid #1e2a3a;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #e0e6f0;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.3s;
+    width: 100%;
+  }
+
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: #00d296;
+    box-shadow: 0 0 0 3px rgba(0,210,150,0.1);
+  }
+
+  .field input::placeholder { color: #2e3d50; }
+
+  .btn-calculate {
+    margin-top: 22px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #00d296, #00b4d8);
+    color: #0a0e17;
+    transition: transform 0.2s, box-shadow 0.3s;
+  }
+
+  .btn-calculate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,210,150,0.3);
+  }
+
+  .btn-calculate:active { transform: translateY(0); }
+
+  /* Results */
+  .results { display: none; }
+  .results.visible { display: block; }
+
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    color: #5a6a80;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 28px 0 14px;
+  }
+
+  /* Heart Rate Section */
+  .hr-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 500px) {
+    .hr-dashboard { grid-template-columns: 1fr; }
+  }
+
+  .hr-card {
+    background: linear-gradient(145deg, #111827, #0f1520);
+    border: 1px solid #1e2a3a;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .hr-card.main {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding: 28px;
+  }
+
+  .hr-ring {
+    position: relative;
+    width: 140px;
+    height: 140px;
+  }
+
+  .hr-ring svg {
+    transform: rotate(-90deg);
+    width: 140px;
+    height: 140px;
+  }
+
+  .hr-ring .ring-bg {
+    fill: none;
+    stroke: #1e2a3a;
+    stroke-width: 8;
+  }
+
+  .hr-ring .ring-fill {
+    fill: none;
+    stroke: url(#hrGradient);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 377;
+    stroke-dashoffset: 377;
+    transition: stroke-dashoffset 1s ease;
+  }
+
+  .hr-ring .ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hr-ring .bpm-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #00d296;
+  }
+
+  .hr-ring .bpm-label {
+    font-size: 0.65rem;
+    color: #5a6a80;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .hr-info { text-align: left; }
+
+  .hr-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #1a2232;
+    font-size: 0.85rem;
+  }
+
+  .hr-info .info-row:last-child { border: none; }
+  .hr-info .info-label { color: #5a6a80; }
+  .hr-info .info-value { font-weight: 700; color: #e0e6f0; }
+
+  /* Zones */
+  .zones-bar {
+    background: linear-gradient(145deg, #111827, #0f1520);
+    border: 1px solid #1e2a3a;
+    border-radius: 16px;
+    padding: 22px;
+    margin-top: 16px;
+  }
+
+  .zone-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.82rem;
+  }
+
+  .zone-row:last-child { margin-bottom: 0; }
+
+  .zone-label {
+    min-width: 60px;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .zone-bar-bg {
+    flex: 1;
+    height: 22px;
+    background: #0a0e17;
+    border-radius: 11px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .zone-bar-fill {
+    height: 100%;
+    border-radius: 11px;
+    transition: width 1s ease;
+    width: 0;
+  }
+
+  .zone-range {
+    min-width: 90px;
+    text-align: right;
+    color: #5a6a80;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .zone1 .zone-label { color: #6BCB77; }
+  .zone1 .zone-bar-fill { background: linear-gradient(90deg, #6BCB77, #4CAF50); }
+  .zone2 .zone-label { color: #4FC3F7; }
+  .zone2 .zone-bar-fill { background: linear-gradient(90deg, #4FC3F7, #2196F3); }
+  .zone3 .zone-label { color: #FFD54F; }
+  .zone3 .zone-bar-fill { background: linear-gradient(90deg, #FFD54F, #FFC107); }
+  .zone4 .zone-label { color: #FF8A65; }
+  .zone4 .zone-bar-fill { background: linear-gradient(90deg, #FF8A65, #FF5722); }
+  .zone5 .zone-label { color: #EF5350; }
+  .zone5 .zone-bar-fill { background: linear-gradient(90deg, #EF5350, #D32F2F); }
+
+  /* Speed Cards */
+  .speed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  .stat-card {
+    background: linear-gradient(145deg, #111827, #0f1520);
+    border: 1px solid #1e2a3a;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-card .stat-icon {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+  }
+
+  .stat-card .stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #00d296;
+  }
+
+  .stat-card .stat-unit {
+    font-size: 0.65rem;
+    color: #5a6a80;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .stat-card .stat-label {
+    font-size: 0.7rem;
+    color: #5a6a80;
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Recovery */
+  .recovery-panel {
+    background: linear-gradient(145deg, #111827, #0f1520);
+    border: 1px solid #1e2a3a;
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 16px;
+  }
+
+  .recovery-meter {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .recovery-circle {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+
+  .recovery-circle svg {
+    transform: rotate(-90deg);
+    width: 120px;
+    height: 120px;
+  }
+
+  .recovery-circle .rc-bg {
+    fill: none;
+    stroke: #1e2a3a;
+    stroke-width: 8;
+  }
+
+  .recovery-circle .rc-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 314;
+    stroke-dashoffset: 314;
+    transition: stroke-dashoffset 1s ease;
+  }
+
+  .recovery-circle .rc-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .recovery-circle .rc-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+  }
+
+  .recovery-circle .rc-label {
+    font-size: 0.6rem;
+    color: #5a6a80;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .recovery-details {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .recovery-details .rd-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #1a2232;
+    font-size: 0.85rem;
+  }
+
+  .recovery-details .rd-row:last-child { border: none; }
+  .recovery-details .rd-key { color: #5a6a80; }
+  .recovery-details .rd-val { font-weight: 700; }
+
+  .recovery-tip {
+    margin-top: 16px;
+    background: #0d1320;
+    border-left: 3px solid #00d296;
+    border-radius: 0 12px 12px 0;
+    padding: 14px 18px;
+    font-size: 0.82rem;
+    color: #8a9bb0;
+    line-height: 1.6;
+  }
+
+  .recovery-tip strong { color: #00d296; }
+
+  /* Animate in */
+  .fade-up {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.6s forwards;
+  }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<header>
+  <div class="logo">⌚ PulseTrack Pro</div>
+  <div class="logo-sub">Runner Analytics Engine</div>
+</header>
+
+<div class="container">
+
+  <!-- Input Panel -->
+  <div class="input-panel">
+    <h2>🏃 Runner Data Input</h2>
+    <div class="input-grid">
+      <div class="field">
+        <label>Age</label>
+        <input type="number" id="age" placeholder="e.g. 30" min="10" max="100" value="30">
+      </div>
+      <div class="field">
+        <label>Resting HR (bpm)</label>
+        <input type="number" id="restHR" placeholder="e.g. 60" min="30" max="120" value="60">
+      </div>
+      <div class="field">
+        <label>Current HR (bpm)</label>
+        <input type="number" id="currentHR" placeholder="e.g. 155" min="40" max="220" value="155">
+      </div>
+      <div class="field">
+        <label>Distance (km)</label>
+        <input type="number" id="distance" placeholder="e.g. 5.0" min="0.1" max="200" step="0.1" value="5.0">
+      </div>
+      <div class="field">
+        <label>Time (minutes)</label>
+        <input type="number" id="time" placeholder="e.g. 25" min="1" max="1440" step="0.1" value="25">
+      </div>
+      <div class="field">
+        <label>HR After 1 Min Rest</label>
+        <input type="number" id="recoveryHR" placeholder="e.g. 120" min="40" max="220" value="120">
+      </div>
+    </div>
+    <button class="btn-calculate" onclick="calculate()">▶ ANALYZE RUN</button>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <!-- Heart Rate -->
+    <div class="section-title">♥ Heart Rate Analysis</div>
+    <div class="hr-dashboard">
+      <div class="hr-card main fade-up">
+        <div class="hr-ring">
+          <svg viewBox="0 0 140 140">
+            <defs>
+              <linearGradient id="hrGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#00d296"/>
+                <stop offset="100%" stop-color="#00b4d8"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="70" cy="70" r="60"/>
+            <circle class="ring-fill" id="hrRing" cx="70" cy="70" r="60"/>
+          </svg>
+          <div class="ring-text">
+            <div class="bpm-value" id="maxHRValue">--</div>
+            <div class="bpm-label">Max BPM</div>
+          </div>
+        </div>
+        <div class="hr-info" id="hrInfo"></div>
+      </div>
+    </div>
+
+    <!-- Zones -->
+    <div class="zones-bar fade-up" style="animation-delay:0.15s" id="zonesContainer"></div>
+
+    <!-- Speed -->
+    <div class="section-title" style="margin-top:28px">⚡ Speed &amp; Pace</div>
+    <div class="speed-grid" id="speedGrid"></div>
+
+    <!-- Recovery -->
+    <div class="section-title" style="margin-top:28px">🔋 Recovery</div>
+    <div class="recovery-panel fade-up" style="animation-delay:0.4s">
+      <div class="recovery-meter">
+        <div class="recovery-circle">
+          <svg viewBox="0 0 120 120">
+            <circle class="rc-bg" cx="60" cy="60" r="50"/>
+            <circle class="rc-fill" id="rcFill" cx="60" cy="60" r="50"/>
+          </svg>
+          <div class="rc-text">
+            <div class="rc-value" id="rcScore">--</div>
+            <div class="rc-label">Score</div>
+          </div>
+        </div>
+        <div class="recovery-details" id="recoveryDetails"></div>
+      </div>
+      <div class="recovery-tip" id="recoveryTip"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function calculate() {
+  const age = parseInt(document.getElementById('age').value);
+  const restHR = parseInt(document.getElementById('restHR').value);
+  const currentHR = parseInt(document.getElementById('currentHR').value);
+  const distance = parseFloat(document.getElementById('distance').value);
+  const time = parseFloat(document.getElementById('time').value);
+  const recoveryHR = parseInt(document.getElementById('recoveryHR').value);
+
+  if (!age || !restHR || !currentHR || !distance || !time || !recoveryHR) return;
+
+  // === HEART RATE CALCULATIONS ===
+  const maxHR = 220 - age;
+  const hrReserve = maxHR - restHR; // Karvonen
+  const hrPercent = Math.round(((currentHR - restHR) / hrReserve) * 100);
+  const hrPercentClamped = Math.min(100, Math.max(0, hrPercent));
+
+  // Current zone
+  let currentZone = 1;
+  if (hrPercent >= 90) currentZone = 5;
+  else if (hrPercent >= 80) currentZone = 4;
+  else if (hrPercent >= 70) currentZone = 3;
+  else if (hrPercent >= 60) currentZone = 2;
+  else currentZone = 1;
+
+  const zoneNames = ['', 'Recovery', 'Endurance', 'Tempo', 'Threshold', 'VO₂ Max'];
+
+  // Display
+  document.getElementById('maxHRValue').textContent = maxHR;
+  const ring = document.getElementById('hrRing');
+  const circumference = 2 * Math.PI * 60;
+  setTimeout(() => {
+    ring.style.strokeDashoffset = circumference - (circumference * hrPercentClamped / 100);
+  }, 100);
+
+  document.getElementById('hrInfo').innerHTML = `
+    <div class="info-row"><span class="info-label">Current HR</span><span class="info-value">${currentHR} bpm</span></div>
+    <div class="info-row"><span class="info-label">Max HR</span><span class="info-value">${maxHR} bpm</span></div>
+    <div class="info-row"><span class="info-label">HR Reserve</span><span class="info-value">${hrReserve} bpm</span></div>
+    <div class="info-row"><span class="info-label">% HRR</span><span class="info-value">${hrPercent}%</span></div>
+    <div class="info-row"><span class="info-label">Current Zone</span><span class="info-value" style="color:#00d296">Z${currentZone} — ${zoneNames[currentZone]}</span></div>
+  `;
+
+  // Zones bars
+  const zones = [
+    { name: 'Zone 1', low: 50, high: 60, cls: 'zone1' },
+    { name: 'Zone 2', low: 60, high: 70, cls: 'zone2' },
+    { name: 'Zone 3', low: 70, high: 80, cls: 'zone3' },
+    { name: 'Zone 4', low: 80, high: 90, cls: 'zone4' },
+    { name: 'Zone 5', low: 90, high: 100, cls: 'zone5' },
+  ];
+
+  let zonesHTML = '';
+  zones.forEach(z => {
+    const lowBPM = Math.round(restHR + (z.low / 100) * hrReserve);
+    const highBPM = Math.round(restHR + (z.high / 100) * hrReserve);
+    const isActive = currentZone === zones.indexOf(z) + 1;
+    const barWidth = isActive ? hrPercentClamped : (z.high);
+    zonesHTML += `
+      <div class="zone-row ${z.cls}">
+        <span class="zone-label" style="${isActive ? 'opacity:1' : 'opacity:0.5'}">${z.name}</span>
+        <div class="zone-bar-bg">
+          <div class="zone-bar-fill" style="width:${barWidth}%; opacity:${isActive ? 1 : 0.3}"></div>
+        </div>
+        <span class="zone-range">${lowBPM}–${highBPM} bpm</span>
+      </div>
+    `;
+  });
+  document.getElementById('zonesContainer').innerHTML = zonesHTML;
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.zone-bar-fill').forEach(el => {
+      el.style.width = el.style.width; // trigger
+    });
+  }, 50);
+
+  // === SPEED CALCULATIONS ===
+  const speedKmh = (distance / time * 60).toFixed(1);
+  const paceMinKm = time / distance;
+  const paceMin = Math.floor(paceMinKm);
+  const paceSec = Math.round((paceMinKm - paceMin) * 60);
+  const speedMph = (speedKmh * 0.621371).toFixed(1);
+  const paceMile = paceMinKm * 1.60934;
+  const paceMinMile = Math.floor(paceMile);
+  const paceSecMile = Math.round((paceMile - paceMinMile) * 60);
+
+  // Calories (rough): kcal ≈ time_min × (0.6309 × HRavg + 0.1988 × weight + 0.2017 × age - 55.0969) / 4.184
+  // Simplified estimate
+  const estCalories = Math.round(time * (currentHR * 0.05) * 0.8);
+
+  document.getElementById('speedGrid').innerHTML = `
+    <div class="stat-card fade-up" style="animation-delay:0.2s">
+      <div class="stat-icon">🏎️</div>
+      <div class="stat-value">${speedKmh}</div>
+      <div class="stat-unit">km/h</div>
+      <div class="stat-label">Speed</div>
+    </div>
+    <div class="stat-card fade-up" style="animation-delay:0.25s">
+      <div class="stat-icon">⏱️</div>
+      <div class="stat-value">${paceMin}:${String(paceSec).padStart(2,'0')}</div>
+      <div class="stat-unit">min / km</div>
+      <div class="stat-label">Pace</div>
+    </div>
+    <div class="stat-card fade-up" style="animation-delay:0.3s">
+      <div class="stat-icon">🇺🇸</div>
+      <div class="stat-value">${paceMinMile}:${String(paceSecMile).padStart(2,'0')}</div>
+      <div class="stat-unit">min / mile</div>
+      <div class="stat-label">Pace (Imperial)</div>
+    </div>
+    <div class="stat-card fade-up" style="animation-delay:0.35s">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-value">${estCalories}</div>
+      <div class="stat-unit">kcal</div>
+      <div class="stat-label">Est. Calories</div>
+    </div>
+  `;
+
+  // === RECOVERY CALCULATIONS ===
+  // Recovery HR Score = Current HR - Recovery HR after 1 min
+  const hrDrop = currentHR - recoveryHR;
+  // Good recovery: drop > 30, Average: 20-30, Poor: < 20
+  let recoveryScore, recoveryRating, recoveryColor, estRecoveryHours, tip;
+
+  if (hrDrop >= 40) {
+    recoveryScore = 95;
+    recoveryRating = 'Excellent';
+    recoveryColor = '#00d296';
+    estRecoveryHours = '12–18 hrs';
+    tip = `Your heart rate dropped <strong>${hrDrop} bpm</strong> within 1 minute — indicating <strong>excellent cardiovascular fitness</strong>. Your autonomic nervous system is responding very efficiently. Light activity tomorrow is fine; full training can resume within 18 hours.`;
+  } else if (hrDrop >= 30) {
+    recoveryScore = 78;
+    recoveryRating = 'Good';
+    recoveryColor = '#4FC3F7';
+    estRecoveryHours = '18–24 hrs';
+    tip = `A <strong>${hrDrop} bpm</strong> drop shows <strong>good recovery capacity</strong>. Your body is adapting well to training load. Consider easy recovery runs tomorrow and full intensity after 24 hours. Hydration and sleep are key tonight.`;
+  } else if (hrDrop >= 20) {
+    recoveryScore = 55;
+    recoveryRating = 'Moderate';
+    recoveryColor = '#FFD54F';
+    estRecoveryHours = '24–36 hrs';
+    tip = `Your HR dropped <strong>${hrDrop} bpm</strong> — a <strong>moderate recovery signal</strong>. This may indicate accumulated fatigue. Prioritize rest, nutrition, and at least 7-8 hours of sleep. Easy walking is OK, but avoid intense sessions for 36 hours.`;
+  } else {
+    recoveryScore = 30;
+    recoveryRating = 'Low';
+    recoveryColor = '#EF5350';
+    estRecoveryHours = '36–48 hrs';
+    tip = `Only a <strong>${hrDrop} bpm</strong> drop is a <strong>low recovery signal</strong>. This could indicate overtraining, dehydration, or stress. We strongly recommend 36-48 hours of rest, deep hydration, and quality sleep before your next session.`;
+  }
+
+  // Intensity factor
+  const intensityFactor = (hrPercent / 100).toFixed(2);
+  const trainingLoad = Math.round(time * hrPercent / 10);
+
+  document.getElementById('rcScore').textContent = recoveryScore;
+  document.getElementById('rcScore').style.color = recoveryColor;
+
+  const rcFill = document.getElementById('rcFill');
+  rcFill.style.stroke = recoveryColor;
+  const rcCircumference = 2 * Math.PI * 50;
+  setTimeout(() => {
+    rcFill.style.strokeDashoffset = rcCircumference - (rcCircumference * recoveryScore / 100);
+  }, 200);
+
+  document.getElementById('recoveryDetails').innerHTML = `
+    <div class="rd-row"><span class="rd-key">HR Drop (1 min)</span><span class="rd-val">${hrDrop} bpm</span></div>
+    <div class="rd-row"><span class="rd-key">Recovery Rating</span><span class="rd-val" style="color:${recoveryColor}">${recoveryRating}</span></div>
+    <div class="rd-row"><span class="rd-key">Est. Full Recovery</span><span class="rd-val">${estRecoveryHours}</span></div>
+    <div class="rd-row"><span class="rd-key">Intensity Factor</span><span class="rd-val">${intensityFactor}</span></div>
+    <div class="rd-row"><span class="rd-key">Training Load (TRIMP)</span><span class="rd-val">${trainingLoad}</span></div>
+  `;
+
+  document.getElementById('recoveryTip').innerHTML = `💡 ${tip}`;
+
+  // Show results
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+
+</body>
+</html>
